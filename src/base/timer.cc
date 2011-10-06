@@ -3,6 +3,7 @@
 
 #include "base/timer.h"
 
+
 namespace base {
 
 Timer::Timer(): state_(NEW) {}
