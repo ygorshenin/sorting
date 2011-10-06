@@ -1,0 +1,8 @@
+# Compiled object files
+*.o
+
+# Debug info
+*.gch
+
+# Emacs backup files
+*~
