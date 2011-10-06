@@ -72,6 +72,32 @@ class StlPartitionSorter: public SorterInterface<T, Comparer> {
     DISABLE_EVIL_CONSTRUCTORS(StlPartitionSorter);
 }; // class StlPartitionSorter
 
+template<typename T, template <typename> class Comparer = std::less>
+class StlInplacePartitionSorter: public SorterInterface<T, Comparer> {
+  public:
+    StlInplacePartitionSorter() {}
+
+    virtual void Sort(size_t size, T *objects) {
+      Comparer<T> comparer;
+      PartitionSort(size, objects, comparer);
+    }
+
+  private:
+    void PartitionSort(size_t size, T *objects, Comparer<T> &comparer) {
+      if (size < 2)
+	return;
+
+      size_t left_size = size / 2, right_size = size - left_size;
+      PartitionSort(left_size, objects, comparer);
+      PartitionSort(right_size, objects + left_size, comparer);
+
+      std::inplace_merge(objects, objects + left_size, objects + size,
+			 comparer);
+    }
+
+    DISABLE_EVIL_CONSTRUCTORS(StlInplacePartitionSorter);
+}; // class StlInplacePartitionSorter
+
 }  // namespace sort
 
 #endif // #ifndef SORT_STL_SORTERS_H
