@@ -13,7 +13,6 @@ timer.o: base/timer.cc base/timer.h
 	g++ $(CFLAGS) -c base/timer.cc base/timer.h
 
 clean:
-	rm tester
-	rm *.o
+	rm tester *.o
 
 .PHONY: clean
