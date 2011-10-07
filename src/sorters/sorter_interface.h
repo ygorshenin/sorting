@@ -1,14 +1,14 @@
-#ifndef SORT_SORTER_INTERFACE_H
-#define SORT_SORTER_INTERFACE_H
+#ifndef SORTERS_SORTER_INTERFACE_H
+#define SORTERS_SORTER_INTERFACE_H
 
 #include <functional>
 
 #include "base/macros.h"
 
 
-namespace sort {
+namespace sorters {
 
-  template<typename T, template <typename> class Comparer = std::less >
+template<typename T, template <typename> class Comparer = std::less >
 class SorterInterface {
   public:
     SorterInterface() {}
@@ -21,6 +21,6 @@ class SorterInterface {
     DISABLE_EVIL_CONSTRUCTORS(SorterInterface);
 }; // class SorterInterface
 
-}  // namespace sort
+}  // namespace sorters
 
-#endif // #ifndef SORT_SORTER_INTERFACE_H
+#endif // #ifndef SORTERS_SORTER_INTERFACE_H

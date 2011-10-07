@@ -1,14 +1,14 @@
-#ifndef SORT_STL_SORTERS_H
-#define SORT_STL_SORTERS_H
+#ifndef SORTERS_STL_SORTERS_H
+#define SORTERS_STL_SORTERS_H
 
 #include <algorithm>
 #include <functional>
 
 #include "base/macros.h"
-#include "sort/sorter_interface.h"
+#include "sorters/sorter_interface.h"
 
 
-namespace sort {
+namespace sorters {
 
 template<typename T, template <typename> class Comparer = std::less>
 class StlBasicSorter: public SorterInterface<T, Comparer> {
@@ -56,8 +56,8 @@ class StlPartitionSorter: public SorterInterface<T, Comparer> {
       T *left_buffer = new T [left_size];
       T *right_buffer = new T [right_size];
 
-      copy(objects, objects + left_size, left_buffer);
-      copy(objects + left_size, objects + size, right_buffer);
+      std::copy(objects, objects + left_size, left_buffer);
+      std::copy(objects + left_size, objects + size, right_buffer);
 
       PartitionSort(left_size, left_buffer, comparer);
       PartitionSort(right_size, right_buffer, comparer);
@@ -99,6 +99,6 @@ class StlInplacePartitionSorter: public SorterInterface<T, Comparer> {
     DISABLE_EVIL_CONSTRUCTORS(StlInplacePartitionSorter);
 }; // class StlInplacePartitionSorter
 
-}  // namespace sort
+}  // namespace sorters
 
-#endif // #ifndef SORT_STL_SORTERS_H
+#endif // #ifndef SORTERS_STL_SORTERS_H
