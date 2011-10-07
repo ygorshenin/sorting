@@ -2,6 +2,7 @@
 #define SORT_STL_SORTERS_H
 
 #include <algorithm>
+#include <functional>
 
 #include "base/macros.h"
 #include "sort/sorter_interface.h"

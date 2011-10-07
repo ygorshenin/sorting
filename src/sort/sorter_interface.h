@@ -8,7 +8,7 @@
 
 namespace sort {
 
-template<typename T, template <typename> class Comparer>
+  template<typename T, template <typename> class Comparer = std::less >
 class SorterInterface {
   public:
     SorterInterface() {}
