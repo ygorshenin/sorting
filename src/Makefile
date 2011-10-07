@@ -6,7 +6,7 @@ all: tester
 tester: tester.o timer.o
 	g++ tester.o timer.o -o tester
 
-tester.o: tester.cc base/timer.h sort/sorter_interface.h sort/stl_sorters.h
+tester.o: tester.cc base/timer.h sort/sorter_interface.h sort/stl_sorters.h generators/generator_interface.h generators/random_generator.h
 	g++ $(CFLAGS) -c tester.cc
 
 timer.o: base/timer.cc base/timer.h
