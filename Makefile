@@ -3,6 +3,8 @@ SRC_SUBDIRS = . base generators sorters
 SRC_DIRS = $(addprefix $(SRC_DIR)/, $(SRC_SUBDIRS))
 SRCS = $(wildcard $(addsuffix /*.cc, $(SRC_DIRS)))
 
+HDRS = $(wildcard $(addsuffix /*.h, $(SRC_DIRS)))
+
 OBJ_DIR = obj
 OBJ_DIRS = $(addprefix $(OBJ_DIR)/, $(SRC_SUBDIRS))
 OBJS := $(patsubst $(SRC_DIR)/%, $(OBJ_DIR)/%, $(SRCS))
@@ -24,8 +26,8 @@ bin_dir:
 obj_dir:
 	mkdir -p $(OBJ_DIRS)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cc
-	$(CPP) $(CPPFLAGS) -c -o $@ $^
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cc $(HDRS)
+	$(CPP) $(CPPFLAGS) -c -o $@ $<
 
 $(PROGRAM): $(OBJS)
 	$(CPP) $(CPPFLAGS) $(LDFLAGS) -o $@ $^
