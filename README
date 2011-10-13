@@ -1,0 +1,17 @@
+REQUIREMENTS:
+
+Linux or Mac
+Installed binutils (g++, ld, make), gnuplot.
+Also, installed Google Flags library: http://code.google.com/p/google-gflags.
+
+HOW TO INSTALL:
+
+Simply type: make
+
+HOW TO USE:
+
+bin/tester --max_power=20 --out_dir=out
+./visualize.bash out
+
+To see all flags, type:
+bin/tester --helpshort
