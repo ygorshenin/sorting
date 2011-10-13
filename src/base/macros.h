@@ -4,6 +4,8 @@
 #include <cassert>
 
 
+#define CHECK_EQ(expected, current) assert(expected == current)
+
 #define CHECK_GE(expected, current) assert(current >= expected)
 
 #define DISABLE_EVIL_CONSTRUCTORS(ClassName) \
