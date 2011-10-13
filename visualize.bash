@@ -28,3 +28,4 @@ echo "set ylabel \"time (sec)\"" >> $joined_script
 cat $script >> $joined_script
 
 gnuplot -p $joined_script
+rm $joined_script
