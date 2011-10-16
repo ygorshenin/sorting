@@ -1,14 +1,12 @@
 #ifndef SORTERS_SORTER_INTERFACE_H
 #define SORTERS_SORTER_INTERFACE_H
 
-#include <functional>
-
 #include "base/macros.h"
 
 
 namespace sorters {
 
-template<typename T, template <typename> class Comparer = std::less >
+template<typename T, typename Comparer>
 class SorterInterface {
   public:
     SorterInterface() {}

@@ -10,26 +10,26 @@
 
 namespace sorters {
 
-template<typename T, template <typename> class Comparer = std::less>
+template<typename T, typename Comparer>
 class StlBasicSorter: public SorterInterface<T, Comparer> {
   public:
     StlBasicSorter() {}
 
     virtual void Sort(size_t size, T *objects) {
-      std::sort(objects, objects + size, Comparer<T>());
+      std::sort(objects, objects + size, Comparer());
     }
 
   private:
     DISABLE_EVIL_CONSTRUCTORS(StlBasicSorter);
 }; // class StlBasicSorter
 
-template<typename T, template <typename> class Comparer = std::less>
+template<typename T, typename Comparer>
 class StlHeapSorter: public SorterInterface<T, Comparer> {
   public:
     StlHeapSorter() {}
 
     virtual void Sort(size_t size, T *objects) {
-      Comparer<T> comparer;
+      Comparer comparer;
       std::make_heap(objects, objects + size, comparer);
       std::sort_heap(objects, objects + size, comparer);
     }
@@ -38,18 +38,18 @@ class StlHeapSorter: public SorterInterface<T, Comparer> {
     DISABLE_EVIL_CONSTRUCTORS(StlHeapSorter);
 }; // class StlHeapSorter
 
-template<typename T, template <typename> class Comparer = std::less>
+template<typename T, typename Comparer>
 class StlPartitionSorter: public SorterInterface<T, Comparer> {
   public:
     StlPartitionSorter() {}
 
     virtual void Sort(size_t size, T *objects) {
-      Comparer<T> comparer;
+      Comparer comparer;
       PartitionSort(size, objects, comparer);
     }
 
   private:
-    void PartitionSort(size_t size, T *objects, Comparer<T> &comparer) {
+    void PartitionSort(size_t size, T *objects, Comparer &comparer) {
       if (size < 2)
 	return;
       size_t left_size = size / 2, right_size = size - left_size;
@@ -73,18 +73,18 @@ class StlPartitionSorter: public SorterInterface<T, Comparer> {
     DISABLE_EVIL_CONSTRUCTORS(StlPartitionSorter);
 }; // class StlPartitionSorter
 
-template<typename T, template <typename> class Comparer = std::less>
+template<typename T, typename Comparer>
 class StlInplacePartitionSorter: public SorterInterface<T, Comparer> {
   public:
     StlInplacePartitionSorter() {}
 
     virtual void Sort(size_t size, T *objects) {
-      Comparer<T> comparer;
+      Comparer comparer;
       PartitionSort(size, objects, comparer);
     }
 
   private:
-    void PartitionSort(size_t size, T *objects, Comparer<T> &comparer) {
+    void PartitionSort(size_t size, T *objects, Comparer &comparer) {
       if (size < 2)
 	return;
 

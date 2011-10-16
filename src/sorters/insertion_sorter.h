@@ -9,13 +9,13 @@
 
 namespace sorters {
 
-template<typename T, template <typename> class Comparer = std::less>
+template<typename T, typename Comparer>
 class InsertionSorter: public SorterInterface<T, Comparer> {
  public:
    InsertionSorter() {}
 
    virtual void Sort(size_t size, T *objects) {
-     Comparer<T> comparer;
+     Comparer comparer;
 
      size_t i = 1, j;
      while (i < size) {
