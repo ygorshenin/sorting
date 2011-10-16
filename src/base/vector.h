@@ -28,7 +28,7 @@ class MetaVectorComparer {
     return lhs[I] < rhs[I] ||
       (lhs[I] == rhs[I] && MetaVectorComparer<N, I + 1, T>::Compare(lhs, rhs));
   }
-}; // class VectorComparer
+}; // class MetaVectorComparer
 
 template<size_t N, typename T>
 class MetaVectorComparer<N, N, T> {
@@ -36,7 +36,7 @@ class MetaVectorComparer<N, N, T> {
   static bool Compare(const Vector<N, T> &lhs, const Vector<N, T> &rhs) {
     return false;
   }
-}; // class VectorComparer
+}; // class MetaVectorComparer
 
 template<size_t N, typename T>
 class VectorComparer {
