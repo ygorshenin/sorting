@@ -30,18 +30,22 @@ using namespace generators;
 using namespace sorters;
 
 
-const int kMaxNumDimensions = 6;
+typedef void (*TesterMethod) ();
+
+const int kMaxNumDimensions = 16;
 
 DEFINE_bool(use_insertion_sort, false, "Use insertion sort in tests.");
 DEFINE_int32(max_power, 24, "Maximum power of two that will be used \
                              as test size.");
 DEFINE_int32(seed, 0, "seed for random generator. If zero, time is used \
                        as seed.");
-DEFINE_int32(num_dimensions, 0, "Number of vector dimensions, from 0 to 5, \
+DEFINE_int32(num_dimensions, 0, "Number of vector dimensions, from 0 to 15, \
                                  inclusively. \
                                  If zero, plain ints will be sorted.");
 DEFINE_string(out_dir, "out", "Output directory for statistics.");
 
+
+namespace {
 
 template<typename T, typename Comparer>
 double TestSortingAlgorithm(size_t size, T *data,
@@ -149,6 +153,32 @@ void TestSortingAlgorithms() {
     delete sorters[cur_sorter];
 }
 
+template<size_t N, size_t I>
+class MetaFillMethodsTable {
+public:
+  static void FillTable(TesterMethod *methods) {
+    methods[I] = &TestSortingAlgorithms<Vector<I, int>,
+					VectorComparer<I, int> >;
+    MetaFillMethodsTable<N, I + 1>::FillTable(methods);
+  }
+}; // class MetaFillMethodsTable
+
+template<size_t N>
+class MetaFillMethodsTable<N, N> {
+public:
+  static void FillTable(TesterMethod *methods) {
+  }
+}; // class MetaFillMethodsTable
+
+template<size_t N>
+void FillMethodsTable(TesterMethod *methods) {
+  if (N > 0) {
+    methods[0] = &TestSortingAlgorithms<int, less<int> >;
+    MetaFillMethodsTable<N, 1>::FillTable(methods);
+  }
+}
+
+}  // namespace
 
 int main(int argc, char **argv) {
   string usage = "This program measures performance of \
@@ -176,17 +206,8 @@ int main(int argc, char **argv) {
   assert(FLAGS_num_dimensions >= 0);
   assert(FLAGS_num_dimensions < kMaxNumDimensions);
 
-  if (FLAGS_num_dimensions == 0)
-    TestSortingAlgorithms<int, less<int> >();
-  else if (FLAGS_num_dimensions == 1)
-    TestSortingAlgorithms<Vector<1, int>, VectorComparer<1, int> >();
-  else if (FLAGS_num_dimensions == 2)
-    TestSortingAlgorithms<Vector<2, int>, VectorComparer<2, int> >();
-  else if (FLAGS_num_dimensions == 3)
-    TestSortingAlgorithms<Vector<3, int>, VectorComparer<3, int> >();
-  else if (FLAGS_num_dimensions == 4)
-    TestSortingAlgorithms<Vector<4, int>, VectorComparer<4, int> >();
-  else if (FLAGS_num_dimensions == 5)
-    TestSortingAlgorithms<Vector<5, int>, VectorComparer<5, int> >();
+  TesterMethod methods[kMaxNumDimensions];
+  FillMethodsTable<kMaxNumDimensions>(methods);
+  (*methods[FLAGS_num_dimensions])();
   return 0;
 }
