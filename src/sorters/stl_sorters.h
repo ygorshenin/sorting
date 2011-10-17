@@ -44,17 +44,34 @@ class StlPartitionSorter: public SorterInterface<T, Comparer> {
     StlPartitionSorter() {}
 
     virtual void Sort(size_t size, T *objects) {
+      buffer_ = new T [EstimateBufferSize(size)];
+      free_position_ = 0;
+
       Comparer comparer;
       PartitionSort(size, objects, comparer);
+
+      delete [] buffer_;
     }
 
   private:
+    size_t EstimateBufferSize(size_t size) const {
+      if (size < 2)
+	return 0;
+      size_t left_size = size / 2, right_size = size - left_size;
+      return size +
+	EstimateBufferSize(left_size) +
+	EstimateBufferSize(right_size);
+    }
+
     void PartitionSort(size_t size, T *objects, Comparer &comparer) {
       if (size < 2)
 	return;
       size_t left_size = size / 2, right_size = size - left_size;
-      T *left_buffer = new T [left_size];
-      T *right_buffer = new T [right_size];
+
+      T *left_buffer = buffer_ + free_position_;
+      free_position_ += left_size;
+      T *right_buffer = buffer_ + free_position_;
+      free_position_ += right_size;
 
       std::copy(objects, objects + left_size, left_buffer);
       std::copy(objects + left_size, objects + size, right_buffer);
@@ -65,10 +82,10 @@ class StlPartitionSorter: public SorterInterface<T, Comparer> {
       std::merge(left_buffer, left_buffer + left_size,
 		 right_buffer, right_buffer + right_size,
 		 objects, comparer);
-
-      delete [] left_buffer;
-      delete [] right_buffer;
     }
+
+    T *buffer_;
+    size_t free_position_;
 
     DISABLE_EVIL_CONSTRUCTORS(StlPartitionSorter);
 }; // class StlPartitionSorter
