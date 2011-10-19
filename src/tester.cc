@@ -11,6 +11,7 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/program_options.hpp"
+#include "boost/ptr_container/ptr_vector.hpp"
 #include "boost/scoped_ptr.hpp"
 #include "boost/timer.hpp"
 
@@ -33,7 +34,7 @@ namespace program_options = boost::program_options;
 
 typedef void (*TesterMethod) ();
 
-const int kMaxNumDimensions = 10;
+const int kMaxNumDimensions = 16;
 
 bool FLAGS_use_insertion_sort;
 int FLAGS_max_power;
@@ -46,11 +47,11 @@ namespace {
 
 template<typename T, typename Comparer>
 double TestSortingAlgorithm(size_t size, T *data,
-			    SorterInterface<T, Comparer> *sorter) {
+			    SorterInterface<T, Comparer> &sorter) {
   boost::timer timer;
 
   timer.restart();
-  sorter->Sort(size, data);
+  sorter.Sort(size, data);
   double elapsed_time = timer.elapsed();
 
   Comparer comparer;
@@ -87,7 +88,7 @@ void DeallocateBuffer(T **buffer, size_t size) {
 template<typename T, typename Comparer>
 void TwoPowerTesting(size_t max_power,
 		     GeneratorInterace<T> *generator,
-		     vector<SorterInterface<T, Comparer> *> &sorters,
+		     boost::ptr_vector<SorterInterface<T, Comparer> > &sorters,
 		     vector<size_t> *test_size,
 		     vector<vector<double> > *elapsed_time) {
   test_size->reserve(max_power);
@@ -146,7 +147,7 @@ template<typename T, typename Comparer>
 void TestSortingAlgorithms() {
   boost::scoped_ptr<GeneratorInterace<T> > generator(new RandomGenerator<T>());
 
-  vector<SorterInterface<T, Comparer> *> sorters;
+  boost::ptr_vector<SorterInterface<T, Comparer> > sorters;
   vector<string> sorters_names;
 
   sorters.push_back(new StlBasicSorter<T, Comparer>());
@@ -175,9 +176,6 @@ void TestSortingAlgorithms() {
   TwoPowerTesting(FLAGS_max_power, generator.get(), sorters,
 		  &test_size, &elapsed_time);
   DumpStatistic(FLAGS_output_directory, sorters_names, test_size, elapsed_time);
-
-  for (size_t cur_sorter = 0; cur_sorter < sorters.size(); ++cur_sorter)
-    delete sorters[cur_sorter];
 }
 
 template<size_t N, size_t I, typename T>
