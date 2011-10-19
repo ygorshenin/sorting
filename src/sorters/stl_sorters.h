@@ -24,6 +24,19 @@ class StlBasicSorter: public SorterInterface<T, Comparer> {
 }; // class StlBasicSorter
 
 template<typename T, typename Comparer>
+class StlStableSorter: public SorterInterface<T, Comparer> {
+  public:
+    StlStableSorter() {}
+
+    virtual void Sort(size_t size, T *objects) {
+      std::stable_sort(objects, objects + size, Comparer());
+    }
+
+  private:
+    DISABLE_EVIL_CONSTRUCTORS(StlStableSorter);
+}; // class StlStableSorter
+
+template<typename T, typename Comparer>
 class StlHeapSorter: public SorterInterface<T, Comparer> {
   public:
     StlHeapSorter() {}
