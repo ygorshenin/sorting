@@ -38,15 +38,19 @@ class MetaVectorComparer<N, N, T> {
   }
 }; // class MetaVectorComparer
 
-template<size_t N, typename T>
 class VectorComparer {
  public:
+  template<size_t N, typename T>
   bool operator () (const Vector<N, T> &lhs, const Vector<N, T> &rhs) const {
     return MetaVectorComparer<N, 0, T>::Compare(lhs, rhs);
+  }
+
+  template<size_t N, typename T>
+  bool operator () (const Vector<N, T> *lhs, const Vector<N, T> *rhs) const {
+    return MetaVectorComparer<N, 0, T>::Compare(*lhs, *rhs);
   }
 }; // class VectorComparer
 
 }  // namespace base
-
 
 #endif // #ifndef BASE_VECTOR_H
