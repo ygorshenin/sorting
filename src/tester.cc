@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include <gflags/gflags.h>
+#include "boost/program_options.hpp"
 
 #include "base/macros.h"
 #include "base/timer.h"
@@ -23,26 +23,23 @@
 #include "sorters/stl_sorters.h"
 
 
-using namespace std;
-
 using namespace base;
 using namespace generators;
 using namespace sorters;
+using namespace std;
+
+namespace program_options = boost::program_options;
 
 
 typedef void (*TesterMethod) ();
 
 const int kMaxNumDimensions = 16;
 
-DEFINE_bool(use_insertion_sort, false, "Use insertion sort in tests.");
-DEFINE_int32(max_power, 24, "Maximum power of two that will be used \
-                             as test size.");
-DEFINE_int32(seed, 0, "seed for random generator. If zero, time is used \
-                       as seed.");
-DEFINE_int32(num_dimensions, 0, "Number of vector dimensions, from 0 to 15, \
-                                 inclusively. \
-                                 If zero, plain ints will be sorted.");
-DEFINE_string(out_dir, "out", "Output directory for statistics.");
+bool FLAGS_use_insertion_sort;
+int FLAGS_max_power;
+int FLAGS_seed;
+int FLAGS_num_dimensions;
+string FLAGS_output_directory;
 
 
 namespace {
@@ -66,6 +63,30 @@ double TestSortingAlgorithm(size_t size, T *data,
   return elapsed_time;
 }
 
+template<typename T>
+void AllocateBuffer(size_t size, T **buffer) {
+  *buffer = new T [size];
+}
+
+template<typename T>
+void AllocateBuffer(size_t size, T ***buffer) {
+  *buffer = new T* [size];
+  for (size_t i = 0; i < size; ++i)
+    (*buffer)[i] = new T();
+}
+
+template<typename T>
+void DeallocateBuffer(T *buffer, size_t size) {
+  delete [] buffer;
+}
+
+template<typename T>
+void DeallocateBuffer(T **buffer, size_t size) {
+  for (size_t i = 0; i < size; ++i)
+    delete buffer[i];
+  delete [] buffer;
+}
+
 template<typename T, typename Comparer>
 void TwoPowerTesting(size_t max_power,
 		     GeneratorInterace<T> *generator,
@@ -82,7 +103,10 @@ void TwoPowerTesting(size_t max_power,
 
     test_size->push_back(size);
 
-    T *data = new T [size], *buffer = new T [size];
+    T *data, *buffer;
+    AllocateBuffer(size, &data);
+    AllocateBuffer(size, &buffer);
+
     generator->Generate(size, data);
 
     for (size_t cur_sorter = 0; cur_sorter < sorters.size(); ++cur_sorter) {
@@ -91,8 +115,8 @@ void TwoPowerTesting(size_t max_power,
 	TestSortingAlgorithm(size, buffer, sorters[cur_sorter]);
     }
 
-    delete [] data;
-    delete [] buffer;
+    DeallocateBuffer(data, size);
+    DeallocateBuffer(buffer, size);
   }
 }
 
@@ -127,6 +151,9 @@ void TestSortingAlgorithms() {
   sorters.push_back(new StlBasicSorter<T, Comparer>());
   sorters_names.push_back("stl_basic_sorter");
 
+  sorters.push_back(new StlStableSorter<T, Comparer>());
+  sorters_names.push_back("stl_stable_sorter");
+
   sorters.push_back(new StlHeapSorter<T, Comparer>());
   sorters_names.push_back("stl_heap_sorter");
 
@@ -146,51 +173,70 @@ void TestSortingAlgorithms() {
 
   TwoPowerTesting(FLAGS_max_power, generator, sorters,
 		  &test_size, &elapsed_time);
-  DumpStatistic(FLAGS_out_dir, sorters_names, test_size, elapsed_time);
+  DumpStatistic(FLAGS_output_directory, sorters_names, test_size, elapsed_time);
 
   delete generator;
   for (size_t cur_sorter = 0; cur_sorter < sorters.size(); ++cur_sorter)
     delete sorters[cur_sorter];
 }
 
-template<size_t N, size_t I>
+template<size_t N, size_t I, typename T>
 class MetaFillMethodsTable {
 public:
   static void FillTable(TesterMethod *methods) {
-    methods[I] = &TestSortingAlgorithms<Vector<I, int>,
-					VectorComparer<I, int> >;
-    MetaFillMethodsTable<N, I + 1>::FillTable(methods);
+    methods[I] = &TestSortingAlgorithms<Vector<I, T>, VectorComparer>;
+    MetaFillMethodsTable<N, I + 1, T>::FillTable(methods);
   }
 }; // class MetaFillMethodsTable
 
-template<size_t N>
-class MetaFillMethodsTable<N, N> {
+template<size_t N, typename T>
+class MetaFillMethodsTable<N, N, T> {
 public:
   static void FillTable(TesterMethod *methods) {
   }
 }; // class MetaFillMethodsTable
 
-template<size_t N>
+template<size_t N, typename T>
 void FillMethodsTable(TesterMethod *methods) {
   if (N > 0) {
     methods[0] = &TestSortingAlgorithms<int, less<int> >;
-    MetaFillMethodsTable<N, 1>::FillTable(methods);
+    MetaFillMethodsTable<N, 1, T>::FillTable(methods);
   }
 }
 
 }  // namespace
 
 int main(int argc, char **argv) {
-  string usage = "This program measures performance of \
-                  different sorting algorithms\n";
-  usage += "Sample usage: ";
-  usage += argv[0];
-  usage += " --max_power=20\n";
+  program_options::options_description description("Allowed options");
+  description.add_options()
+    ("help,h", "produce help message")
+    ("use_insertion_sort",
+     program_options::value<bool>(&FLAGS_use_insertion_sort)->default_value(false),
+     "use slow sort in tests")
+    ("max_power,m",
+     program_options::value<int>(&FLAGS_max_power)->default_value(24),
+     "maximum power of two that will be used as maximum test size")
+    ("seed,s",
+     program_options::value<int>(&FLAGS_seed)->default_value(0),
+     "seed for random generator, if zero, time is used as seed")
+    ("num_dimensions,n",
+     program_options::value<int>(&FLAGS_num_dimensions)->default_value(0),
+     "number of vector dimensions, if zero, plain ints will be sorted")
+    ("output_directory,o",
+     program_options::value<string>(&FLAGS_output_directory)->default_value("out"),
+     "output directory for storing test info")
+    ;
+  program_options::variables_map vm;
+  program_options::store(program_options::
+			 parse_command_line(argc, argv, description), vm);
+  program_options::notify(vm);
 
-  google::SetUsageMessage(usage);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  if (vm.count("help")) {
+    cout << description << endl;
+    return 1;
+  }
 
-  assert(FLAGS_out_dir != "");
+  assert(FLAGS_output_directory != "");
   assert(FLAGS_max_power >= 0);
 
   if (FLAGS_seed == 0)
@@ -198,7 +244,7 @@ int main(int argc, char **argv) {
   else
     srand(FLAGS_seed);
 
-  if (mkdir(FLAGS_out_dir.c_str(), 0777) != 0 && errno != EEXIST) {
+  if (mkdir(FLAGS_output_directory.c_str(), 0777) != 0 && errno != EEXIST) {
     perror("Can't create output directory");
     return 1;
   }
@@ -207,7 +253,7 @@ int main(int argc, char **argv) {
   assert(FLAGS_num_dimensions < kMaxNumDimensions);
 
   TesterMethod methods[kMaxNumDimensions];
-  FillMethodsTable<kMaxNumDimensions>(methods);
+  FillMethodsTable<kMaxNumDimensions, int>(methods);
   (*methods[FLAGS_num_dimensions])();
   return 0;
 }

@@ -15,8 +15,8 @@ BIN_DIR = bin
 PROGRAM = $(BIN_DIR)/tester
 
 CPP = g++
-CPPFLAGS = -O2 -Wall -I$(SRC_DIR)
-LDFLAGS = -lgflags
+CPPFLAGS = -O2 -Wall -I$(SRC_DIR) -I$(BOOST_ROOT)
+LDFLAGS = /usr/local/lib/libboost_program_options.a
 
 all: bin_dir obj_dir $(PROGRAM)
 
