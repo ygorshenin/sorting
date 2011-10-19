@@ -12,9 +12,9 @@
 #include <vector>
 
 #include "boost/program_options.hpp"
+#include "boost/timer.hpp"
 
 #include "base/macros.h"
-#include "base/timer.h"
 #include "base/vector.h"
 #include "generators/generator_interface.h"
 #include "generators/random_generator.h"
@@ -47,18 +47,15 @@ namespace {
 template<typename T, typename Comparer>
 double TestSortingAlgorithm(size_t size, T *data,
 			    SorterInterface<T, Comparer> *sorter) {
-  base::Timer timer;
+  boost::timer timer;
 
-  timer.Start();
+  timer.restart();
   sorter->Sort(size, data);
-  timer.Stop();
+  double elapsed_time = timer.elapsed();
 
   Comparer comparer;
   for (size_t i = 0; i + 1 < size; ++i)
     assert(!comparer(data[i + 1], data[i]));
-
-  double elapsed_time = timer.GetTimeElapsed();
-  CHECK_GE(0.0, elapsed_time);
 
   return elapsed_time;
 }
