@@ -11,6 +11,7 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/program_options.hpp"
+#include "boost/scoped_ptr.hpp"
 #include "boost/timer.hpp"
 
 #include "base/macros.h"
@@ -32,7 +33,7 @@ namespace program_options = boost::program_options;
 
 typedef void (*TesterMethod) ();
 
-const int kMaxNumDimensions = 16;
+const int kMaxNumDimensions = 10;
 
 bool FLAGS_use_insertion_sort;
 int FLAGS_max_power;
@@ -143,7 +144,7 @@ void DumpStatistic(const string &out_dir,
 
 template<typename T, typename Comparer>
 void TestSortingAlgorithms() {
-  GeneratorInterace<T> *generator = new RandomGenerator<T>();
+  boost::scoped_ptr<GeneratorInterace<T> > generator(new RandomGenerator<T>());
 
   vector<SorterInterface<T, Comparer> *> sorters;
   vector<string> sorters_names;
@@ -171,11 +172,10 @@ void TestSortingAlgorithms() {
   vector<size_t> test_size;
   vector<vector<double> > elapsed_time;
 
-  TwoPowerTesting(FLAGS_max_power, generator, sorters,
+  TwoPowerTesting(FLAGS_max_power, generator.get(), sorters,
 		  &test_size, &elapsed_time);
   DumpStatistic(FLAGS_output_directory, sorters_names, test_size, elapsed_time);
 
-  delete generator;
   for (size_t cur_sorter = 0; cur_sorter < sorters.size(); ++cur_sorter)
     delete sorters[cur_sorter];
 }

@@ -1,20 +1,17 @@
 #ifndef GENERATORS_GENERATOR_INTERFACE_H
 #define GENERATORS_GENERATOR_INTERFACE_H
 
-#include "base/macros.h"
+#include "boost/utility.hpp"
 
 
 namespace generators {
 
 template<typename T>
-class GeneratorInterace {
+class GeneratorInterace: boost::noncopyable {
  public:
   GeneratorInterace() {}
 
   virtual void Generate(size_t size, T *buffer) = 0;
-
- private:
-  DISABLE_EVIL_CONSTRUCTORS(GeneratorInterace);
 }; // class GeneratorInterace
 
 }  // namespace generators

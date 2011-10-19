@@ -1,22 +1,19 @@
 #ifndef SORTERS_SORTER_INTERFACE_H
 #define SORTERS_SORTER_INTERFACE_H
 
-#include "base/macros.h"
+#include "boost/utility.hpp"
 
 
 namespace sorters {
 
 template<typename T, typename Comparer>
-class SorterInterface {
+class SorterInterface: boost::noncopyable {
   public:
     SorterInterface() {}
 
     virtual ~SorterInterface() {}
 
     virtual void Sort(size_t size, T *objects) = 0;
-
-  private:
-    DISABLE_EVIL_CONSTRUCTORS(SorterInterface);
 }; // class SorterInterface
 
 }  // namespace sorters

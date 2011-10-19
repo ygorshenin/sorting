@@ -3,7 +3,6 @@
 
 #include <cstdlib>
 
-#include "base/macros.h"
 #include "base/vector.h"
 #include "generators/generator_interface.h"
 
@@ -19,9 +18,6 @@ class RandomGenerator: public GeneratorInterace<T> {
   RandomGenerator() {}
 
   virtual void Generate(size_t size, T *buffer);
-
- private:
-  DISABLE_EVIL_CONSTRUCTORS(RandomGenerator);
 }; // class RandomGenerator
 
 template<>
@@ -33,9 +29,6 @@ class RandomGenerator<int>: public GeneratorInterace<int> {
     for (size_t i = 0; i < size; ++i)
       buffer[i] = rand();
   }
-
- private:
-   DISABLE_EVIL_CONSTRUCTORS(RandomGenerator);
 }; // class RandomGenerator
 
 template<size_t N>
@@ -49,9 +42,6 @@ class RandomGenerator<Vector<N, int> >:
       for (size_t j = 0; j < N; ++j)
 	buffer[i][j] = rand();
   }
-
- private:
-  DISABLE_EVIL_CONSTRUCTORS(RandomGenerator);
 }; // class RandomGenerator
 
 

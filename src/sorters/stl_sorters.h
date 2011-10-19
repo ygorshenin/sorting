@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <functional>
 
-#include "base/macros.h"
 #include "sorters/sorter_interface.h"
 
 
@@ -18,9 +17,6 @@ class StlBasicSorter: public SorterInterface<T, Comparer> {
     virtual void Sort(size_t size, T *objects) {
       std::sort(objects, objects + size, Comparer());
     }
-
-  private:
-    DISABLE_EVIL_CONSTRUCTORS(StlBasicSorter);
 }; // class StlBasicSorter
 
 template<typename T, typename Comparer>
@@ -31,9 +27,6 @@ class StlStableSorter: public SorterInterface<T, Comparer> {
     virtual void Sort(size_t size, T *objects) {
       std::stable_sort(objects, objects + size, Comparer());
     }
-
-  private:
-    DISABLE_EVIL_CONSTRUCTORS(StlStableSorter);
 }; // class StlStableSorter
 
 template<typename T, typename Comparer>
@@ -46,9 +39,6 @@ class StlHeapSorter: public SorterInterface<T, Comparer> {
       std::make_heap(objects, objects + size, comparer);
       std::sort_heap(objects, objects + size, comparer);
     }
-
-  private:
-    DISABLE_EVIL_CONSTRUCTORS(StlHeapSorter);
 }; // class StlHeapSorter
 
 template<typename T, typename Comparer>
@@ -99,12 +89,10 @@ class StlPartitionSorter: public SorterInterface<T, Comparer> {
 
     T *buffer_;
     size_t free_position_;
-
-    DISABLE_EVIL_CONSTRUCTORS(StlPartitionSorter);
 }; // class StlPartitionSorter
 
 template<typename T, typename Comparer>
-class StlInplacePartitionSorter: public SorterInterface<T, Comparer> {
+  class StlInplacePartitionSorter: public SorterInterface<T, Comparer> {
   public:
     StlInplacePartitionSorter() {}
 
@@ -125,8 +113,6 @@ class StlInplacePartitionSorter: public SorterInterface<T, Comparer> {
       std::inplace_merge(objects, objects + left_size, objects + size,
 			 comparer);
     }
-
-    DISABLE_EVIL_CONSTRUCTORS(StlInplacePartitionSorter);
 }; // class StlInplacePartitionSorter
 
 }  // namespace sorters

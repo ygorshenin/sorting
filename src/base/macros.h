@@ -8,9 +8,5 @@
 
 #define CHECK_GE(expected, current) assert(current >= expected)
 
-#define DISABLE_EVIL_CONSTRUCTORS(ClassName) \
-  ClassName(const ClassName&);		     \
-  ClassName& operator = (const ClassName&)
-
 
 #endif // #ifndef BASE_MACROS_H
