@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "boost/filesystem.hpp"
 #include "boost/program_options.hpp"
 #include "boost/timer.hpp"
 
@@ -28,8 +29,8 @@ using namespace generators;
 using namespace sorters;
 using namespace std;
 
+namespace filesystem = boost::filesystem;
 namespace program_options = boost::program_options;
-
 
 typedef void (*TesterMethod) ();
 
@@ -126,11 +127,15 @@ void DumpStatistic(const string &out_dir,
   CHECK_EQ(n, sorters_names.size());
   CHECK_EQ(n, elapsed_time.size());
 
+  filesystem::path output_directory(out_dir);
+
   for (size_t i = 0; i < sorters_names.size(); ++i) {
     CHECK_EQ(m, elapsed_time[i].size());
 
-    const string path = out_dir + "/" + sorters_names[i] + ".dat";
-    ofstream ofs(path.c_str());
+    filesystem::path current_path = output_directory /
+      (sorters_names[i] + ".dat");
+    ofstream ofs(current_path.c_str());
+    assert(ofs);
 
     ofs << setprecision(6) << fixed;
     for (size_t j = 0; j < m; ++j)
@@ -241,11 +246,11 @@ int main(int argc, char **argv) {
   else
     srand(FLAGS_seed);
 
-  if (mkdir(FLAGS_output_directory.c_str(), 0777) != 0 && errno != EEXIST) {
-    perror("Can't create output directory");
-    return 1;
-  }
-
+  filesystem::path output_directory(FLAGS_output_directory);
+  if (filesystem::exists(output_directory))
+    assert(is_directory(output_directory));
+  else
+    assert(filesystem::create_directory(FLAGS_output_directory));
   assert(FLAGS_num_dimensions >= 0);
   assert(FLAGS_num_dimensions < kMaxNumDimensions);
 
