@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "boost/chrono.hpp"
 #include "boost/filesystem.hpp"
 #include "boost/program_options.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
@@ -20,6 +21,7 @@
 #include "generators/generator_interface.h"
 #include "generators/random_generator.h"
 #include "sorters/insertion_sorter.h"
+#include "sorters/multithreaded_sorters.h"
 #include "sorters/sorter_interface.h"
 #include "sorters/stl_sorters.h"
 
@@ -48,11 +50,12 @@ namespace {
 template<typename T, typename Comparer>
 double TestSortingAlgorithm(size_t size, T *data,
 			    SorterInterface<T, Comparer> &sorter) {
-  boost::timer timer;
-
-  timer.restart();
+  boost::chrono::system_clock::time_point start =
+    boost::chrono::system_clock::now();
   sorter.Sort(size, data);
-  double elapsed_time = timer.elapsed();
+  boost::chrono::system_clock::time_point end =
+    boost::chrono::system_clock::now();
+  double elapsed_time = boost::chrono::duration<double>(end - start).count();
 
   Comparer comparer;
   for (size_t i = 0; i + 1 < size; ++i)
@@ -164,6 +167,18 @@ void TestSortingAlgorithms() {
 
   sorters.push_back(new StlInplacePartitionSorter<T, Comparer>());
   sorters_names.push_back("stl_inplace_partition_sorter");
+
+  sorters.push_back(new MultithreadedRandomizedQuickSorter<T, Comparer>(0));
+  sorters_names.push_back("multithreaded_randomized_quick_sorter_0");
+
+  sorters.push_back(new MultithreadedRandomizedQuickSorter<T, Comparer>(2));
+  sorters_names.push_back("multithreaded_randomized_quick_sorter_2");
+
+  sorters.push_back(new MultithreadedRandomizedQuickSorter<T, Comparer>(4));
+  sorters_names.push_back("multithreaded_randomized_quick_sorter_4");
+
+  sorters.push_back(new MultithreadedRandomizedQuickSorter<T, Comparer>(8));
+  sorters_names.push_back("multithreaded_randomized_quick_sorter_8");
 
   if (FLAGS_use_insertion_sort) {
     sorters.push_back(new InsertionSorter<T, Comparer>());

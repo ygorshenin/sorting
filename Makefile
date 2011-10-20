@@ -16,7 +16,7 @@ PROGRAM = $(BIN_DIR)/tester
 
 CPP = g++
 CPPFLAGS = -O2 -Wall -I$(SRC_DIR) -I$(BOOST_ROOT)
-BOOST_LIBS = filesystem program_options system
+BOOST_LIBS = filesystem program_options system thread chrono
 BOOST_LIBS_ROOT = /usr/local/lib
 LDFLAGS = $(addprefix $(BOOST_LIBS_ROOT)/, $(addsuffix .a, $(addprefix libboost_, $(BOOST_LIBS))))
 
