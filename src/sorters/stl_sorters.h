@@ -1,10 +1,16 @@
 #ifndef SORTERS_STL_SORTERS_H
 #define SORTERS_STL_SORTERS_H
 
+#include <stdlib.h>
+
 #include <algorithm>
 #include <functional>
+#include <iostream>
 
 #include "sorters/sorter_interface.h"
+
+using std::clog;
+using std::endl;
 
 
 namespace sorters {
@@ -47,7 +53,14 @@ class StlPartitionSorter: public SorterInterface<T, Comparer> {
     StlPartitionSorter() {}
 
     virtual void Sort(size_t size, T *objects) {
-      buffer_ = new T [EstimateBufferSize(size)];
+      buffer_ = new (std::nothrow) T [EstimateBufferSize(size)];
+
+      if (buffer_ == NULL) {
+	clog << "StlPartitionSorter::Sort: can't allocate buffer" << endl;
+	clog << "Terminating...";
+	exit(-1);
+      }
+
       free_position_ = 0;
 
       Comparer comparer;

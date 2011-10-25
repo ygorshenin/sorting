@@ -6,17 +6,18 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <new>
 #include <string>
 #include <vector>
 
-#include "boost/chrono.hpp"
 #include "boost/filesystem.hpp"
 #include "boost/program_options.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
 #include "boost/scoped_ptr.hpp"
-#include "boost/timer.hpp"
+#include "boost/progress.hpp"
 
 #include "base/macros.h"
+#include "base/timer.h"
 #include "base/vector.h"
 #include "generators/generator_interface.h"
 #include "generators/random_generator.h"
@@ -47,33 +48,77 @@ string FLAGS_output_directory;
 
 namespace {
 
+class InfoEntry {
+public:
+  InfoEntry():
+    test_size_(0), generating_time_(-1.0), sorting_time_(-1.0),
+    checking_time_(-1.0) {
+  }
+
+  friend ostream& operator << (ostream& os, const InfoEntry& entry);
+
+
+  size_t test_size_;
+  double generating_time_;
+  double sorting_time_;
+  double checking_time_;
+}; // class InfoEntry
+
+ostream& operator << (ostream& os, const InfoEntry& entry) {
+  os << setprecision(6) << fixed;
+
+  os << "Test size: " << entry.test_size_ << endl;
+  os << "Generating time: " << entry.generating_time_ << endl;
+  os << "Sorting time: " << entry.sorting_time_ << endl;
+  os << "Checking time: " << entry.checking_time_ << endl;
+
+  return os;
+}
+
 template<typename T, typename Comparer>
-double TestSortingAlgorithm(size_t size, T *data,
-			    SorterInterface<T, Comparer> &sorter) {
-  boost::chrono::system_clock::time_point start =
-    boost::chrono::system_clock::now();
+void TestSortingAlgorithm(size_t size, T *data,
+			  SorterInterface<T, Comparer> &sorter,
+			  InfoEntry &entry) {
+  Timer timer;
+
   sorter.Sort(size, data);
-  boost::chrono::system_clock::time_point end =
-    boost::chrono::system_clock::now();
-  double elapsed_time = boost::chrono::duration<double>(end - start).count();
+  entry.sorting_time_ = timer.Elapsed();
 
   Comparer comparer;
+
+  timer.Restart();
   for (size_t i = 0; i + 1 < size; ++i)
     assert(!comparer(data[i + 1], data[i]));
-
-  return elapsed_time;
+  entry.checking_time_ = timer.Elapsed();
 }
 
 template<typename T>
 void AllocateBuffer(size_t size, T **buffer) {
-  *buffer = new T [size];
+  *buffer = new (std::nothrow) T [size];
+  if (*buffer == NULL) {
+    clog << "AllocateBuffer: can't allocate buffer" << endl;
+    clog << "Terminating..." << endl;
+    exit(-1);
+  }
 }
 
 template<typename T>
 void AllocateBuffer(size_t size, T ***buffer) {
-  *buffer = new T* [size];
-  for (size_t i = 0; i < size; ++i)
-    (*buffer)[i] = new T();
+  *buffer = new (std::nothrow) T* [size];
+  if (*buffer == NULL) {
+    clog << "AllocateBuffer: can't allocate buffer" << endl;
+    clog << "Terminating..." << endl;
+    exit(-1);
+  }
+
+  for (size_t i = 0; i < size; ++i) {
+    (*buffer)[i] = new (std::nothrow) T();
+    if ((*buffer)[i] == NULL) {
+      clog << "AllocateBuffer: can't instaniate object" << endl;
+      clog << "Terminating..." << endl;
+      exit(-1);
+    }
+  }
 }
 
 template<typename T>
@@ -92,28 +137,34 @@ template<typename T, typename Comparer>
 void TwoPowerTesting(size_t max_power,
 		     GeneratorInterace<T> *generator,
 		     boost::ptr_vector<SorterInterface<T, Comparer> > &sorters,
-		     vector<size_t> *test_size,
-		     vector<vector<double> > *elapsed_time) {
-  test_size->reserve(max_power);
-  elapsed_time->resize(sorters.size());
+		     vector<vector<InfoEntry> > *info) {
+  info->resize(sorters.size());
+
   for (size_t cur_sorter = 0; cur_sorter < sorters.size(); ++cur_sorter)
-    (*elapsed_time)[cur_sorter].resize(max_power);
+    (*info)[cur_sorter].resize(max_power);
+
+  Timer timer;
+  boost::progress_display show_progress(max_power * sorters.size(), clog);
 
   for (size_t power = 0; power < max_power; ++power) {
     const size_t size = 1 << power;
-
-    test_size->push_back(size);
 
     T *data, *buffer;
     AllocateBuffer(size, &data);
     AllocateBuffer(size, &buffer);
 
+    timer.Restart();
     generator->Generate(size, data);
+    double generating_time = timer.Elapsed();
 
     for (size_t cur_sorter = 0; cur_sorter < sorters.size(); ++cur_sorter) {
+      (*info)[cur_sorter][power].test_size_ = size;
+      (*info)[cur_sorter][power].generating_time_ = generating_time;
+
       std::copy(data, data + size, buffer);
-      (*elapsed_time)[cur_sorter][power] =
-	TestSortingAlgorithm(size, buffer, sorters[cur_sorter]);
+      TestSortingAlgorithm(size, buffer, sorters[cur_sorter],
+			   (*info)[cur_sorter][power]);
+      ++show_progress;
     }
 
     DeallocateBuffer(data, size);
@@ -123,17 +174,19 @@ void TwoPowerTesting(size_t max_power,
 
 void DumpStatistic(const string &out_dir,
 		   const vector<string> &sorters_names,
-		   const vector<size_t> &test_size,
-		   const vector<vector<double> > &elapsed_time) {
-  const size_t n = sorters_names.size(), m = test_size.size();
+		   const vector<vector<InfoEntry> > &info) {
+  if (info.empty())
+    return;
+
+  const size_t n = sorters_names.size(), m = info.front().size();
 
   CHECK_EQ(n, sorters_names.size());
-  CHECK_EQ(n, elapsed_time.size());
+  CHECK_EQ(n, info.size());
 
   filesystem::path output_directory(out_dir);
 
   for (size_t i = 0; i < sorters_names.size(); ++i) {
-    CHECK_EQ(m, elapsed_time[i].size());
+    CHECK_EQ(m, info[i].size());
 
     filesystem::path current_path = output_directory /
       (sorters_names[i] + ".dat");
@@ -142,7 +195,7 @@ void DumpStatistic(const string &out_dir,
 
     ofs << setprecision(6) << fixed;
     for (size_t j = 0; j < m; ++j)
-      ofs << test_size[j] << "\t" << elapsed_time[i][j] << endl;
+      ofs << info[i][j].test_size_ << "\t" << info[i][j].sorting_time_ << endl;
   }
 }
 
@@ -185,12 +238,10 @@ void TestSortingAlgorithms() {
     sorters_names.push_back("insertion_sorter");
   }
 
-  vector<size_t> test_size;
-  vector<vector<double> > elapsed_time;
+  vector<vector<InfoEntry> > info;
 
-  TwoPowerTesting(FLAGS_max_power, generator.get(), sorters,
-		  &test_size, &elapsed_time);
-  DumpStatistic(FLAGS_output_directory, sorters_names, test_size, elapsed_time);
+  TwoPowerTesting(FLAGS_max_power, generator.get(), sorters, &info);
+  DumpStatistic(FLAGS_output_directory, sorters_names, info);
 }
 
 template<size_t N, size_t I, typename T>
@@ -253,9 +304,16 @@ int main(int argc, char **argv) {
   assert(FLAGS_max_power >= 0);
 
   if (FLAGS_seed == 0)
-    srand(time(NULL));
+    FLAGS_seed = time(NULL);
+  srand(FLAGS_seed);
+
+  clog << "Maximum test size: " << (1 << FLAGS_max_power) << endl;
+  if (FLAGS_num_dimensions == 0)
+    clog << "Plain ints will be sorted" << endl;
   else
-    srand(FLAGS_seed);
+    clog << "Vectors of size " << FLAGS_num_dimensions <<
+      " will be sorted" << endl;
+  clog << "Current seed: " << FLAGS_seed << endl;
 
   filesystem::path output_directory(FLAGS_output_directory);
   if (filesystem::exists(output_directory))
