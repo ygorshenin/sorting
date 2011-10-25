@@ -6,7 +6,6 @@
 #include <functional>
 
 #include <boost/thread/thread.hpp>
-using namespace std;
 
 
 namespace sorters {
@@ -27,20 +26,20 @@ class MultithreadedRandomizedQuickSorter: public SorterInterface<T, Comparer> {
  private:
    static void Partition(size_t size, T *objects, Comparer &comparer,
 		  size_t *left_bound, size_t *right_bound) {
-     swap(objects[rand() % size], objects[size - 1]);
+     std::swap(objects[rand() % size], objects[size - 1]);
      T pivot = objects[size - 1];
 
      *left_bound = 0;
      for (size_t i = 0; i < size; ++i)
        if (comparer(objects[i], pivot)) {
-	 swap(objects[*left_bound], objects[i]);
+	 std::swap(objects[*left_bound], objects[i]);
 	 ++*left_bound;
        }
 
      *right_bound = *left_bound;
      for (size_t i = *left_bound; i < size; ++i)
        if (!comparer(pivot, objects[i])) {
-	 swap(objects[*right_bound], objects[i]);
+	 std::swap(objects[*right_bound], objects[i]);
 	 ++*right_bound;
        }
    }
