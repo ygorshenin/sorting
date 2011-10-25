@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <new>
 #include <string>
 #include <vector>
@@ -48,21 +49,12 @@ string FLAGS_output_directory;
 
 namespace {
 
-class InfoEntry {
-public:
-  InfoEntry():
-    test_size_(0), generating_time_(-1.0), sorting_time_(-1.0),
-    checking_time_(-1.0) {
-  }
-
-  friend ostream& operator << (ostream& os, const InfoEntry& entry);
-
-
+struct InfoEntry {
   size_t test_size_;
   double generating_time_;
   double sorting_time_;
   double checking_time_;
-}; // class InfoEntry
+}; // struct InfoEntry
 
 ostream& operator << (ostream& os, const InfoEntry& entry) {
   os << setprecision(6) << fixed;
@@ -188,14 +180,28 @@ void DumpStatistic(const string &out_dir,
   for (size_t i = 0; i < sorters_names.size(); ++i) {
     CHECK_EQ(m, info[i].size());
 
-    filesystem::path current_path = output_directory /
-      (sorters_names[i] + ".dat");
-    ofstream ofs(current_path.c_str());
-    assert(ofs);
+    {
+      filesystem::path current_path = output_directory /
+	(sorters_names[i] + ".dat");
+      ofstream ofs(current_path.c_str());
+      assert(ofs);
 
-    ofs << setprecision(6) << fixed;
-    for (size_t j = 0; j < m; ++j)
-      ofs << info[i][j].test_size_ << "\t" << info[i][j].sorting_time_ << endl;
+      ofs << setprecision(6) << fixed;
+	for (size_t j = 0; j < m; ++j)
+	  ofs <<
+	    info[i][j].test_size_ << '\t' <<
+	    info[i][j].sorting_time_ << endl;
+    }
+
+    {
+      filesystem::path current_path = output_directory /
+	(sorters_names[i] + ".log");
+      ofstream ofs(current_path.c_str());
+      assert(ofs);
+
+      copy(info[i].begin(), info[i].end(),
+	   ostream_iterator<InfoEntry>(ofs, "\n"));
+    }
   }
 }
 
