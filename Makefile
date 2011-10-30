@@ -32,7 +32,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cc $(HDRS)
 	$(CPP) $(CPPFLAGS) -c -o $@ $<
 
 $(PROGRAM): $(OBJS)
-	$(CPP) $(CPPFLAGS) $(LDFLAGS) -o $@ $^
+	$(CPP) $(LDFLAGS) -o $@ $^
 
 .PHONY: clean
 

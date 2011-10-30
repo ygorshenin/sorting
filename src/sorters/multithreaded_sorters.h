@@ -47,21 +47,18 @@ class MultithreadedRandomizedQuickSorter: public SorterInterface<T, Comparer> {
    static void SortImpl(size_t size, T *objects, Comparer &comparer,
 			size_t thread_limit) {
      if (size > 1) {
-       size_t left_bound, right_bound;
-       Partition(size, objects, comparer, &left_bound, &right_bound);
-
        if (thread_limit > 0) {
+	 size_t left_bound, right_bound;
+	 Partition(size, objects, comparer, &left_bound, &right_bound);
+
 	 size_t left_threads = (thread_limit - 1) / 2;
 	 size_t right_threads = thread_limit - 1 - left_threads;
-	 boost::thread thread(&SortImpl, left_bound, objects, comparer,
-			      left_threads);
-	 SortImpl(size - right_bound, objects + right_bound, comparer,
-		  right_threads);
+	 boost::thread thread(&SortImpl, size - right_bound,
+			      objects + right_bound, comparer, right_threads);
+	 SortImpl(left_bound, objects, comparer, left_threads);
 	 thread.join();
-       } else {
-	 SortImpl(left_bound, objects, comparer, 0);
-	 SortImpl(size - right_bound, objects + right_bound, comparer, 0);
-       }
+       } else
+	 std::sort(objects, objects + size, comparer);
      }
    }
 

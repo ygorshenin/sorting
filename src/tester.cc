@@ -38,7 +38,7 @@ namespace program_options = boost::program_options;
 
 typedef void (*TesterMethod) ();
 
-const int kMaxNumDimensions = 8;
+const int kMaxNumDimensions = 16;
 
 bool FLAGS_use_insertion_sort;
 bool FLAGS_sort_pointers;
@@ -346,7 +346,8 @@ int main(int argc, char **argv) {
   assert(FLAGS_num_dimensions >= 0);
   assert(FLAGS_num_dimensions <= kMaxNumDimensions);
 
-  TesterMethod plain_methods[kMaxNumDimensions], ptr_methods[kMaxNumDimensions];
+  TesterMethod plain_methods[kMaxNumDimensions + 1];
+  TesterMethod ptr_methods[kMaxNumDimensions + 1];
   FillMethodsTable<kMaxNumDimensions + 1>(plain_methods, ptr_methods);
 
   if (!FLAGS_sort_pointers)
