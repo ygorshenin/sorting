@@ -297,7 +297,7 @@ int main(int argc, char **argv) {
      "sort pointers to objects instead of objects")
     ("max_power,m",
      program_options::value<int>(&FLAGS_max_power)->default_value(24),
-     "maximum power of two that will be used as maximum test size, must be from [0 .. 31].")
+     "maximum power of two that will be used as maximum test size. Must be from [0 .. 31].")
     ("seed,s",
      program_options::value<int>(&FLAGS_seed)->default_value(0),
      "seed for random generator, if zero, time is used as seed")
