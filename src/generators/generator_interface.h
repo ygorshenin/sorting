@@ -11,7 +11,9 @@ class GeneratorInterace: boost::noncopyable {
  public:
   GeneratorInterace() {}
 
-  virtual void Generate(size_t size, T *buffer) = 0;
+  virtual ~GeneratorInterace() {}
+
+  virtual void Generate(T *object) = 0;
 }; // class GeneratorInterace
 
 }  // namespace generators

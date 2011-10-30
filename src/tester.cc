@@ -15,8 +15,8 @@
 #include "boost/program_options.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
 #include "boost/scoped_ptr.hpp"
-#include "boost/progress.hpp"
 
+#include "base/comparer.h"
 #include "base/macros.h"
 #include "base/timer.h"
 #include "base/vector.h"
@@ -38,9 +38,10 @@ namespace program_options = boost::program_options;
 
 typedef void (*TesterMethod) ();
 
-const int kMaxNumDimensions = 16;
+const int kMaxNumDimensions = 8;
 
 bool FLAGS_use_insertion_sort;
+bool FLAGS_sort_pointers;
 int FLAGS_max_power;
 int FLAGS_seed;
 int FLAGS_num_dimensions;
@@ -126,27 +127,26 @@ void DeallocateBuffer(T **buffer, size_t size) {
 }
 
 template<typename T, typename Comparer>
-void TwoPowerTesting(size_t max_power,
-		     GeneratorInterace<T> *generator,
+void TwoPowerTesting(GeneratorInterace<T> *generator,
 		     boost::ptr_vector<SorterInterface<T, Comparer> > &sorters,
 		     vector<vector<InfoEntry> > *info) {
   info->resize(sorters.size());
 
   for (size_t cur_sorter = 0; cur_sorter < sorters.size(); ++cur_sorter)
-    (*info)[cur_sorter].resize(max_power);
+    (*info)[cur_sorter].resize(FLAGS_max_power + 1);
 
   Timer timer;
-  boost::progress_display show_progress(max_power * sorters.size(), clog);
 
-  for (size_t power = 0; power < max_power; ++power) {
+  for (int power = 0; power <= FLAGS_max_power; ++power) {
     const size_t size = 1 << power;
 
     T *data, *buffer;
     AllocateBuffer(size, &data);
-    AllocateBuffer(size, &buffer);
+    buffer = new T [size];
 
     timer.Restart();
-    generator->Generate(size, data);
+    for (size_t i = 0; i < size; ++i)
+      generator->Generate(&data[i]);
     double generating_time = timer.Elapsed();
 
     for (size_t cur_sorter = 0; cur_sorter < sorters.size(); ++cur_sorter) {
@@ -156,11 +156,10 @@ void TwoPowerTesting(size_t max_power,
       std::copy(data, data + size, buffer);
       TestSortingAlgorithm(size, buffer, sorters[cur_sorter],
 			   (*info)[cur_sorter][power]);
-      ++show_progress;
     }
 
     DeallocateBuffer(data, size);
-    DeallocateBuffer(buffer, size);
+    delete [] buffer;
   }
 }
 
@@ -246,31 +245,38 @@ void TestSortingAlgorithms() {
 
   vector<vector<InfoEntry> > info;
 
-  TwoPowerTesting(FLAGS_max_power, generator.get(), sorters, &info);
+  TwoPowerTesting(generator.get(), sorters, &info);
   DumpStatistic(FLAGS_output_directory, sorters_names, info);
 }
 
-template<size_t N, size_t I, typename T>
+template<size_t N, size_t I>
 class MetaFillMethodsTable {
 public:
-  static void FillTable(TesterMethod *methods) {
-    methods[I] = &TestSortingAlgorithms<Vector<I, T>, VectorComparer>;
-    MetaFillMethodsTable<N, I + 1, T>::FillTable(methods);
+  static void FillTable(TesterMethod *plain_methods,
+			TesterMethod *ptr_methods) {
+    plain_methods[I] = &TestSortingAlgorithms<Vector<I, int>,
+					      PlainVectorComparer>;
+    ptr_methods[I] = &TestSortingAlgorithms<Vector<I, int>*,
+					    PtrVectorComparer>;
+    MetaFillMethodsTable<N, I + 1>::FillTable(plain_methods, ptr_methods);
   }
 }; // class MetaFillMethodsTable
 
-template<size_t N, typename T>
-class MetaFillMethodsTable<N, N, T> {
+template<size_t N>
+class MetaFillMethodsTable<N, N> {
 public:
-  static void FillTable(TesterMethod *methods) {
+  static void FillTable(TesterMethod *plain_methods,
+			TesterMethod *ptr_methods) {
   }
 }; // class MetaFillMethodsTable
 
-template<size_t N, typename T>
-void FillMethodsTable(TesterMethod *methods) {
+template<size_t N>
+void FillMethodsTable(TesterMethod *plain_methods, TesterMethod *ptr_methods) {
   if (N > 0) {
-    methods[0] = &TestSortingAlgorithms<int, less<int> >;
-    MetaFillMethodsTable<N, 1, T>::FillTable(methods);
+    plain_methods[0] = &TestSortingAlgorithms<int, less<int> >;
+    ptr_methods[0] = &TestSortingAlgorithms<int*, PtrIntComparer>;
+
+    MetaFillMethodsTable<N, 1>::FillTable(plain_methods, ptr_methods);
   }
 }
 
@@ -283,6 +289,9 @@ int main(int argc, char **argv) {
     ("use_insertion_sort",
      program_options::value<bool>(&FLAGS_use_insertion_sort)->default_value(false),
      "use slow sort in tests")
+    ("sort_pointers",
+     program_options::value<bool>(&FLAGS_sort_pointers)->default_value(false),
+     "sort pointers to objects instead of objects")
     ("max_power,m",
      program_options::value<int>(&FLAGS_max_power)->default_value(24),
      "maximum power of two that will be used as maximum test size")
@@ -314,11 +323,19 @@ int main(int argc, char **argv) {
   srand(FLAGS_seed);
 
   clog << "Maximum test size: " << (1 << FLAGS_max_power) << endl;
-  if (FLAGS_num_dimensions == 0)
-    clog << "Plain ints will be sorted" << endl;
-  else
-    clog << "Vectors of size " << FLAGS_num_dimensions <<
-      " will be sorted" << endl;
+  if (FLAGS_sort_pointers) {
+    if (FLAGS_num_dimensions == 0)
+      clog << "Pointers to ints will be sorted" << endl;
+    else
+      clog << "Pointers to vectors of size " << FLAGS_num_dimensions <<
+	" will be sorted" << endl;
+  } else {
+    if (FLAGS_num_dimensions == 0)
+      clog << "Plain ints will be sorted" << endl;
+    else
+      clog << "Vectors of size " << FLAGS_num_dimensions <<
+	" will be sorted" << endl;
+  }
   clog << "Current seed: " << FLAGS_seed << endl;
 
   filesystem::path output_directory(FLAGS_output_directory);
@@ -327,10 +344,14 @@ int main(int argc, char **argv) {
   else
     assert(filesystem::create_directory(FLAGS_output_directory));
   assert(FLAGS_num_dimensions >= 0);
-  assert(FLAGS_num_dimensions < kMaxNumDimensions);
+  assert(FLAGS_num_dimensions <= kMaxNumDimensions);
 
-  TesterMethod methods[kMaxNumDimensions];
-  FillMethodsTable<kMaxNumDimensions, int>(methods);
-  (*methods[FLAGS_num_dimensions])();
+  TesterMethod plain_methods[kMaxNumDimensions], ptr_methods[kMaxNumDimensions];
+  FillMethodsTable<kMaxNumDimensions + 1>(plain_methods, ptr_methods);
+
+  if (!FLAGS_sort_pointers)
+    (*plain_methods[FLAGS_num_dimensions])();
+  else
+    (*ptr_methods[FLAGS_num_dimensions])();
   return 0;
 }
