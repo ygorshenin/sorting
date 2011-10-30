@@ -38,6 +38,7 @@ namespace program_options = boost::program_options;
 
 typedef void (*TesterMethod) ();
 
+const int kMaxPower = 31;
 const int kMaxNumDimensions = 16;
 
 bool FLAGS_use_insertion_sort;
@@ -139,6 +140,8 @@ void TwoPowerTesting(GeneratorInterace<T> *generator,
 
   for (int power = 0; power <= FLAGS_max_power; ++power) {
     const size_t size = 1 << power;
+
+    clog << "Testing on a buffer of size " << size << " ..." << endl;
 
     T *data, *buffer;
     AllocateBuffer(size, &data);
@@ -294,13 +297,13 @@ int main(int argc, char **argv) {
      "sort pointers to objects instead of objects")
     ("max_power,m",
      program_options::value<int>(&FLAGS_max_power)->default_value(24),
-     "maximum power of two that will be used as maximum test size")
+     "maximum power of two that will be used as maximum test size, must be from [0 .. 31].")
     ("seed,s",
      program_options::value<int>(&FLAGS_seed)->default_value(0),
      "seed for random generator, if zero, time is used as seed")
     ("num_dimensions,n",
      program_options::value<int>(&FLAGS_num_dimensions)->default_value(0),
-     "number of vector dimensions, if zero, plain ints will be sorted")
+     "number of vector dimensions, if zero, plain ints will be sorted. Must be from [0 .. 16].")
     ("output_directory,o",
      program_options::value<string>(&FLAGS_output_directory)->default_value("out"),
      "output directory for storing test info")
@@ -317,6 +320,9 @@ int main(int argc, char **argv) {
 
   assert(FLAGS_output_directory != "");
   assert(FLAGS_max_power >= 0);
+  assert(FLAGS_max_power <= kMaxPower);
+  assert(FLAGS_num_dimensions >= 0);
+  assert(FLAGS_num_dimensions <= kMaxNumDimensions);
 
   if (FLAGS_seed == 0)
     FLAGS_seed = time(NULL);
@@ -343,8 +349,6 @@ int main(int argc, char **argv) {
     assert(is_directory(output_directory));
   else
     assert(filesystem::create_directory(FLAGS_output_directory));
-  assert(FLAGS_num_dimensions >= 0);
-  assert(FLAGS_num_dimensions <= kMaxNumDimensions);
 
   TesterMethod plain_methods[kMaxNumDimensions + 1];
   TesterMethod ptr_methods[kMaxNumDimensions + 1];
